@@ -10,7 +10,6 @@ load_dotenv()
 
 
 # GPT 모델 초기화
-OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 
