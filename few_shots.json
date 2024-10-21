@@ -1,14 +1,14 @@
 {
-    "List all products.": "SELECT * FROM products;",
-    "Find all orders placed by customer with ID 103.": "SELECT * FROM orders WHERE customerNumber = 103;",
-    "List all employees who work in the 'Sales' department.": "SELECT * FROM employees WHERE jobTitle LIKE '%Sales%';",
-    "List all offices in the USA.": "SELECT * FROM offices WHERE country = 'USA';",
-    "Find the total payments received from customer with ID 103.": "SELECT SUM(amount) FROM payments WHERE customerNumber = 103;",
-    "List all customers from France.": "SELECT * FROM customers WHERE country = 'France';",
-    "How many products are there in the 'Motorcycles' product line?": "SELECT COUNT(*) FROM products WHERE productLine = 'Motorcycles';",
-    "Find the total number of orders.": "SELECT COUNT(*) FROM orders;",
-    "List all products that have more than 5000 units in stock.": "SELECT * FROM products WHERE quantityInStock > 5000;",
-    "Who are the top 5 customers by total payments?": "SELECT customerNumber, SUM(amount) AS TotalPayments FROM payments GROUP BY customerNumber ORDER BY TotalPayments DESC LIMIT 5;",
-    "Which orders were shipped in the year 2003?": "SELECT * FROM orders WHERE YEAR(shippedDate) = 2003;",
-    "How many employees are there?": "SELECT COUNT(*) FROM employees;"
+    "모든 제품 목록을 조회하세요.": "SELECT * FROM products;",
+    "ID가 103인 고객이 주문한 모든 주문을 찾으세요.": "SELECT * FROM orders WHERE customerNumber = 103;",
+    "'Sales' 부서에서 근무하는 모든 직원을 조회하세요.": "SELECT * FROM employees WHERE jobTitle LIKE '%Sales%';",
+    "미국에 있는 모든 지사를 조회하세요.": "SELECT * FROM offices WHERE country = 'USA';",
+    "ID가 103인 고객으로부터 받은 총 결제 금액을 찾으세요.": "SELECT SUM(amount) FROM payments WHERE customerNumber = 103;",
+    "프랑스에 있는 모든 고객을 조회하세요.": "SELECT * FROM customers WHERE country = 'France';",
+    "'Motorcycles' 제품 라인에 있는 제품 수를 구하세요.": "SELECT COUNT(*) FROM products WHERE productLine = 'Motorcycles';",
+    "전체 주문 수를 구하세요.": "SELECT COUNT(*) FROM orders;",
+    "재고가 5000개 이상인 모든 제품을 조회하세요.": "SELECT * FROM products WHERE quantityInStock > 5000;",
+    "총 결제 금액이 가장 많은 상위 5명의 고객을 조회하세요.": "SELECT customerNumber, SUM(amount) AS TotalPayments FROM payments GROUP BY customerNumber ORDER BY TotalPayments DESC LIMIT 5;",
+    "2003년에 배송된 주문을 조회하세요.": "SELECT * FROM orders WHERE YEAR(shippedDate) = 2003;",
+    "직원의 총 수를 구하세요.": "SELECT COUNT(*) FROM employees;"
 }
