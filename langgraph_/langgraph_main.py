@@ -1,9 +1,9 @@
 import argparse
 
-from .node import GraphState
-from .graph import make_graph
-from .utils import get_runnable_config
-from .faiss_init import get_vector_stores
+from node import GraphState
+from graph import make_graph
+from utils import get_runnable_config
+from faiss_init import get_vector_stores
 
 
 def get_config():
