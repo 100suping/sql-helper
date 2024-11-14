@@ -98,7 +98,7 @@ def get_table_ddl(db_name: str | None, DB_SERVER) -> Tuple[List[str], List[str]]
     if not db_name:
         return None, None  # type: ignore
     print(f"Get Table DDL data from {db_name}")
-    db_url = os.path.join(DB_SERVER, db_name)
+    db_url = f"{DB_SERVER}/{db_name}"
     engine = create_engine(db_url)
     print("Engine Created!")
     # DB 내 정보 확인
@@ -153,7 +153,7 @@ def embed_table_ddl(db_names, DB_SERVER):
 def get_vector_stores() -> Dict[str, VectorStore]:
     load_dotenv()
     DB_SERVER = st.secrets["URL"]
-    information_schema_path = os.path.join(DB_SERVER, "INFORMATION_SCHEMA")  # type: ignore
+    information_schema_path = f"{DB_SERVER}/INFORMATION_SCHEMA"
     # create_engine으로 db에 접근 준비
     engine = create_engine(information_schema_path)
 
