@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import streamlit as st
 from typing import List, Dict, Tuple
 from langchain_core.vectorstores import VectorStore
 from langchain_community.vectorstores import FAISS
@@ -151,7 +152,7 @@ def embed_table_ddl(db_names, DB_SERVER):
 
 def get_vector_stores() -> Dict[str, VectorStore]:
     load_dotenv()
-    DB_SERVER = os.getenv("URL")
+    DB_SERVER = st.secrets["URL"]
     information_schema_path = os.path.join(DB_SERVER, "INFORMATION_SCHEMA")  # type: ignore
     # create_engine으로 db에 접근 준비
     engine = create_engine(information_schema_path)
