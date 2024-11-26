@@ -5,7 +5,6 @@ from unsloth import FastLanguageModel
 from huggingface_hub import login
 
 
-
 def str2bool(value: str) -> bool:
     """
     문자열을 부울 값으로 변환합니다.
@@ -18,13 +17,12 @@ def str2bool(value: str) -> bool:
     """
     if isinstance(value, bool):
         return value
-    if value.lower() in ('yes', 'true', 't', 'y', '1'):
+    if value.lower() in ("yes", "true", "t", "y", "1"):
         return True
-    elif value.lower() in ('no', 'false', 'f', 'n', '0'):
+    elif value.lower() in ("no", "false", "f", "n", "0"):
         return False
     else:
         raise ValueError(f"Cannot convert {value} to a boolean.")
-
 
 
 def get_runnable_config(recursion_limit: int, thread_id: str) -> RunnableConfig:
@@ -76,8 +74,6 @@ def load_prompt(prompt_path: str) -> str:
     return prompt
 
 
-
-
 def load_qwen_model():
     # Hugging Face 토큰 설정
     huggingface_token = "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"
@@ -91,9 +87,7 @@ def load_qwen_model():
 
     # FastLanguageModel을 사용하여 모델과 토크나이저 로드
     model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name=model_name,
-        token=huggingface_token,
-        quantization_config=bnb_config
+        model_name=model_name, token=huggingface_token, quantization_config=bnb_config
     )
 
     # Unsloth 사용 시 inference 모드 전환

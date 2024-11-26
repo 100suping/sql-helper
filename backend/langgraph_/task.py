@@ -8,14 +8,19 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.sql.expression import Executable
 from sqlalchemy.engine import Result
 
-from .utils import load_qwen_model, EmptyQueryResultError, NullQueryResultError, load_prompt
+from .utils import (
+    load_qwen_model,
+    EmptyQueryResultError,
+    NullQueryResultError,
+    load_prompt,
+)
 from .utils import EmptyQueryResultError, NullQueryResultError, load_prompt
 from typing import List, Any, Union, Sequence, Dict
 from pydantic import BaseModel, Field
 import os, re
 
-from unsloth import FastLanguageModel 
-import torch 
+from unsloth import FastLanguageModel
+import torch
 
 
 def evaluate_user_question(user_question: str) -> str:
@@ -342,12 +347,16 @@ def create_query(
         # flow_status에 따른 프롬프트 생성
         if flow_status == "KEEP":
             main_prompt = load_prompt("prompts/query_creation/generate_v1.prompt")
-            full_prompt = prefix + main_prompt + postfix + f"\n\nuser_question: {user_question}"
+            full_prompt = (
+                prefix + main_prompt + postfix + f"\n\nuser_question: {user_question}"
+            )
         else:
             regen_prompt = load_prompt(
                 "prompts/query_creation/regenerate_v1.prompt"
             ).format(prev_query=prev_query, result_msg=error_msg)
-            full_prompt = prefix + regen_prompt + postfix + f"\n\nuser_question: {user_question}"
+            full_prompt = (
+                prefix + regen_prompt + postfix + f"\n\nuser_question: {user_question}"
+            )
 
         # Qwen 모델 로드 및 추론 준비
         model, tokenizer = load_qwen_model()
@@ -359,7 +368,7 @@ def create_query(
             return_tensors="pt",
             padding=True,
             truncation=True,
-            max_length=2048
+            max_length=2048,
         )
 
         # 모델 추론
@@ -368,7 +377,7 @@ def create_query(
                 **inputs,
                 max_new_tokens=512,
                 pad_token_id=tokenizer.pad_token_id,
-                eos_token_id=tokenizer.eos_token_id
+                eos_token_id=tokenizer.eos_token_id,
             )
 
         # 결과 디코딩 및 SQL 추출

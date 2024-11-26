@@ -176,10 +176,10 @@ def query_creation(state: GraphState) -> GraphState:
     # 디버깅을 위한 타입 체크
     print(f"Type of user_question in node.py: {type(user_question)}")
     print(f"Value of user_question in node.py: {user_question}")
-    
+
     # user_question이 문자열이 아닌 경우 문자열로 변환
     if not isinstance(user_question, str):
-        user_question = str(user_question)    
+        user_question = str(user_question)
 
     query_fix_cnt = state.get("query_fix_cnt")
     flow_status = state.get("flow_status", "KEEP")
