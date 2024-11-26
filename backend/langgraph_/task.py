@@ -90,38 +90,13 @@ def analyze_user_question(user_question: str) -> str:
 
     ANALYZE_PROMPT = ChatPromptTemplate.from_messages(
         [
-            (
-                "system",
-                """당신은 사용자의 질문을 분석하여 데이터베이스 쿼리에 필요한 요소들을 파악하는 전문가입니다.
-                    다음과 같은 요소들을 체계적으로 분석해주세요:
-                    - 질문의 핵심 의도
-                    - 필요한 데이터 항목
-                    - 시간적 범위
-                    - 데이터 필터링 조건
-                    - 데이터 정렬 및 그룹화 요구사항
-                    
-                    분석 과정에서 발견된 문제점을 다음 태그를 사용하여 설명해주세요:
-                    - [불명확] - 질문이 모호하거나 여러 해석이 가능한 경우
-                    예시: "최근", "적절한" 같이 기준이 불분명한 표현
-                    - [확인필요] - 추가 정보나 맥락이 필요한 경우
-                    예시: 특정 용어의 정의나 기준이 명시되지 않은 경우
-                    - [에러] - 논리적 모순이 발생한 경우""",
+            SystemMessage(
+                content=load_prompt("prompts/question_analysis/main_v1.prompt")
             ),
             (
                 "human",
-                """사용자 질문: {user_question}
-                    
-                    아래 형식으로 상세하게 분석해주세요:
-                    - 주요 의도: 사용자가 질문의 핵심적으로 묻고자 하는 바는 무엇인가요?
-                    - 필요한 데이터 항목: 사용자가 원하는 구체적인 데이터나 정보는 무엇인가요?
-                    - 시간적 범위: 사용자가 원하는 시간적 범위는 어떻게 되나요?
-                    - 데이터 필터링 조건: 사용자가 요청한 데이터에는 어떤 조건이나 필터링이 필요한가요?
-                    - 데이터 정렬 및 그룹화: 사용자가 원하는 데이터의 정렬 기준이나 그룹화 방식은 무엇인가요?
-                    
-                    분석 과정에서 발견한 문제점을 아래에 태그와 함께 설명해주세요:
-                    - [불명확]:
-                    - [확인필요]:
-                    - [에러]:""",
+                "사용자 질문: {user_question}"
+                + load_prompt("prompts/question_analysis/human_v1.prompt"),
             ),
         ]
     )
@@ -132,86 +107,48 @@ def analyze_user_question(user_question: str) -> str:
     return analyze_question
 
 
-def clarify_user_question(user_question: str, user_question_analyze: str) -> str:
+def clarify_user_question(
+    user_question: str, user_question_analyze: str, collected_questions: List[str]
+) -> str:
     output_parser = StrOutputParser()
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
-    user_add_questions = []
-    final_analysis = user_question_analyze
-    CLARIFY_PROMPT = ChatPromptTemplate.from_messages(
+    prompt = ChatPromptTemplate.from_messages(
         [
-            (
-                "system",
-                """당신은 데이터 분석가로서 [불명확], [확인필요], [에러] 태그 뒤에 명시된 문제를 파악하고 해결하기 위한 적절한 추가 질문을 합니다. 이를 통해 문제가 해결됬는지 판단하세요. 
-                
-                추가 질문 조건:
-                1. 태그([불명확], [확인필요], [에러])로 표시된 문제만 질문하고 이외 추가적인 질문은 절대 금지
-                2. 한 번에 하나의 질문만 제시
-                3. 객관식 질문으로 구성
-                4. 구체적이고 이해하기 쉬운 질문으로 작성
-                5. 이전 질문 기록을 검토하여 중복 질문 방지
-                
-                종료 조건:
-                1. [불명확], [확인필요], [에러] 태그에 해당하는 모든 문제가 해결된 경우
-                2. "해당 사항 없음"과 같은 사용자가 더 이상의 추가 정보 제공을 원하지 않는 경우
-                3. 이전 질문 기록에 중복된 질문이 반복될 경우
-
-                응답 형식:
-                1. 추가 질문이 필요한 경우:
-                "질문:\n1) 옵션 1\n2) 옵션 2\n3) 옵션 3\n4) 직접 입력\n"
-                
-                2. 종료 조건을 만족한 경우:
-                "종료\n최종분석:\n주요 의도:\n필요한 데이터 항목:\n시간적 범위:\n데이터 필터링 조건:\n데이터 정령 및 그룹화 요구사항:"
-                """,
+            SystemMessage(
+                content=load_prompt("prompts/additional_question/main_v1.prompt")
             ),
             (
                 "human",
-                """원래 사용자 질문:
-                {user_question}
-                
-                초기 질문 분석:
-                {user_question_analyze}
-                
-                이전 질문 기록:
-                {collected_questions}
-                
-                지시사항:
-                태그([불명확], [확인필요], [에러])가 표시된 모든 문제가 해결되면 분석을 종료하세요.
-                """,
+                "원래 사용자 질문:\n{user_question}\n\n초기 질문 분석:\n{user_question_analyze}\n\n이전 질문 기록:\n{collected_questions}\n\n"
+                + load_prompt("prompts/additional_question/human_postfix_v1.prompt"),
             ),
         ]
     )
 
-    while True:
-        clarify_chain = CLARIFY_PROMPT | llm | output_parser
-        collected_questions = "\n".join(
-            f"{i+1}. {q}" for i, q in enumerate(user_add_questions)
-        )
+    chain = prompt | llm | output_parser
+    chat_history = "\n".join(f"{i+1}. {q}" for i, q in enumerate(collected_questions))
 
-        clarify_question = clarify_chain.invoke(
-            {
-                "user_question": user_question,
-                "user_question_analyze": user_question_analyze,
-                "collected_questions": collected_questions,
-            }
-        )
+    leading_question = chain.invoke(
+        {
+            "user_question": user_question,
+            "user_question_analyze": user_question_analyze,
+            "collected_questions": chat_history,
+        }
+    )
 
-        if clarify_question.startswith("종료"):
-            final_analysis = clarify_question.split("최종분석:")[1].strip()
-            print(f"\n{final_analysis}")
-            break
+    # user_add_questions.append(
+    #     f"\n질문: \n{clarify_question}\n답변: {user_answer}\n"
+    # )
 
-        print(f"\n{clarify_question}", flush=True)
-        user_answer = input(
-            "답변을 입력하세요 (종료하려면 '해당 사항 없음' 입력): "
-        ).strip()
-        print(f"사용자 답변: {user_answer}")
+    return leading_question
 
-        user_add_questions.append(
-            f"\n질문: \n{clarify_question}\n답변: {user_answer}\n"
-        )
 
-    return final_analysis
+def check_leading_question(leading_question: str) -> int:
+    if leading_question.startswith("종료"):
+        return 0
+    else:
+        return 1
 
 
 def refine_user_question(user_question: str, user_question_analyze: str) -> str:
@@ -219,9 +156,8 @@ def refine_user_question(user_question: str, user_question_analyze: str) -> str:
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
     REFINE_PROMPT = ChatPromptTemplate.from_messages(
         [
-            (
-                "system",
-                """당신은 사용자의 질문을 더 명확하고 구체적으로 다듬는 전문가입니다. 주어진 질문과 분석을 바탕으로 더 구체적인 질문으로 재구성하세요.""",
+            SystemMessage(
+                content=load_prompt("prompts/question_refinement/main_v1.prompt")
             ),
             (
                 "human",

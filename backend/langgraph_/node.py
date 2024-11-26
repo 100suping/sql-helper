@@ -9,6 +9,7 @@ from .task import (
     analyze_user_question,
     refine_user_question,
     clarify_user_question,
+    check_leading_question,
     get_query_result,
     business_conversation,
 )
@@ -24,6 +25,8 @@ class GraphState(TypedDict):
     user_question: str  # 사용자의 질문
     user_question_eval: str  # 사용자의 질문이 SQL 관련 질문인지 여부
     user_question_analyze: str  # 사용자 질문 분석
+    collected_questions: List[str]  # 사용자의 질문에 대한 추가 질문-대답 기록
+    ask_user: int  # leading question 질문 여부 [0, 1]
     final_answer: str
     # TODO
     # context_cnt가 동적으로 조절 되도록 알고리즘을 짜야 한다.
@@ -88,7 +91,7 @@ def question_analyze(state: GraphState) -> GraphState:
     user_question = state["user_question"]
     analyze_question = analyze_user_question(user_question)
 
-    return GraphState(user_question_analyze=analyze_question)
+    return GraphState(user_question_analyze=analyze_question)  # type: ignore
 
 
 def question_clarify(state: GraphState) -> GraphState:
@@ -102,9 +105,20 @@ def question_clarify(state: GraphState) -> GraphState:
     """
     user_question_analyze = state["user_question_analyze"]
     user_question = state["user_question"]
-    clarify_question = clarify_user_question(user_question, user_question_analyze)
+    collected_questions = state.get("collected_questions", [])
 
-    return GraphState(user_question_analyze=clarify_question)
+    leading_question = clarify_user_question(
+        user_question, user_question_analyze, collected_questions
+    )
+    ask_user = check_leading_question(leading_question)
+    collected_questions.append(leading_question)
+
+    return GraphState(collected_questions=collected_questions, ask_user=ask_user)  # type: ignore
+
+
+def human_feedback(state: GraphState) -> GraphState:
+
+    return state
 
 
 def question_refine(state: GraphState) -> GraphState:
@@ -116,11 +130,12 @@ def question_refine(state: GraphState) -> GraphState:
     Returns:
         GraphState: 사용자의 질문에 대한 대답이 추가된 그래프 상태
     """
-    user_question_analyze = state["user_question_analyze"]
+    collected_questions = state["collected_questions"]
+    user_question_analyze = collected_questions[-1]
     user_question = state["user_question"]
     refine_question = refine_user_question(user_question, user_question_analyze)
 
-    return GraphState(user_question=refine_question)
+    return GraphState(user_question=refine_question)  # type: ignore
 
 
 def table_selection(state: GraphState) -> GraphState:
@@ -288,6 +303,14 @@ def user_question_analyze_checker(state: GraphState) -> str:
         state["need_clarification"] = False
 
     return state["need_clarification"]
+
+
+def leading_question_checker(state: GraphState) -> str:
+    ask_user = state["ask_user"]
+    if ask_user == 0:
+        return "ESCAPE"
+    else:
+        return "KEEP"
 
 
 def query_checker(state: GraphState) -> str:
