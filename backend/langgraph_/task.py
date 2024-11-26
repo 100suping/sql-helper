@@ -8,10 +8,14 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.sql.expression import Executable
 from sqlalchemy.engine import Result
 
+from .utils import load_qwen_model, EmptyQueryResultError, NullQueryResultError, load_prompt
 from .utils import EmptyQueryResultError, NullQueryResultError, load_prompt
 from typing import List, Any, Union, Sequence, Dict
 from pydantic import BaseModel, Field
 import os, re
+
+from unsloth import FastLanguageModel 
+import torch 
 
 
 def evaluate_user_question(user_question: str) -> str:
@@ -322,50 +326,66 @@ def create_query(
     prev_query="",
     error_msg="",
 ):
-    output_parser = StrOutputParser()
-    context = ""
-    for idx, table_info in enumerate(table_contexts):
-        if idx in set(table_contexts_ids):
-            context += table_info + "\n\n"
-
-    prefix = load_prompt("prompts/query_creation/prefix_v1.prompt").format(
-        context=context
-    )
-
-    postfix = load_prompt("prompts/query_creation/postfix_v1.prompt")
-
-    if flow_status == "KEEP":
-        main_prompt = load_prompt("prompts/query_creation/generate_v1.prompt")
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                SystemMessage(content=prefix + main_prompt + postfix),
-                (
-                    "human",
-                    """user_question: {user_question}""",
-                ),
-            ]
-        )
-    else:
-        regen_prompt = load_prompt(
-            "prompts/query_creation/regenerate_v1.prompt"
-        ).format(prev_query=prev_query, result_msg=error_msg)
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                SystemMessage(content=prefix + regen_prompt + postfix),
-                ("human", """user_question: {user_question}"""),
-            ]
-        )
-
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-    chain = prompt | llm | output_parser
-
-    output = chain.invoke({"user_question": user_question})
     try:
-        sql_query = re.search(r"```sql\s*(.*?)\s*```", output, re.DOTALL).group(1)
-    except:
-        sql_query = re.search(r"SELECT.*?;", output, re.DOTALL).group(1)
+        # 컨텍스트 생성
+        context = ""
+        for idx, table_info in enumerate(table_contexts):
+            if idx in set(table_contexts_ids):
+                context += table_info + "\n\n"
 
-    return sql_query
+        # 프롬프트 로드 및 구성
+        prefix = load_prompt("prompts/query_creation/prefix_v1.prompt").format(
+            context=context
+        )
+        postfix = load_prompt("prompts/query_creation/postfix_v1.prompt")
+
+        # flow_status에 따른 프롬프트 생성
+        if flow_status == "KEEP":
+            main_prompt = load_prompt("prompts/query_creation/generate_v1.prompt")
+            full_prompt = prefix + main_prompt + postfix + f"\n\nuser_question: {user_question}"
+        else:
+            regen_prompt = load_prompt(
+                "prompts/query_creation/regenerate_v1.prompt"
+            ).format(prev_query=prev_query, result_msg=error_msg)
+            full_prompt = prefix + regen_prompt + postfix + f"\n\nuser_question: {user_question}"
+
+        # Qwen 모델 로드 및 추론 준비
+        model, tokenizer = load_qwen_model()
+        model = FastLanguageModel.for_inference(model)  # 추론을 위한 모델 준비
+
+        # 입력 토크나이징
+        inputs = tokenizer(
+            full_prompt,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=2048
+        )
+
+        # 모델 추론
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=512,
+                pad_token_id=tokenizer.pad_token_id,
+                eos_token_id=tokenizer.eos_token_id
+            )
+
+        # 결과 디코딩 및 SQL 추출
+        output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+        try:
+            sql_query = re.search(r"```sql\s*(.*?)\s*```", output, re.DOTALL).group(1)
+        except:
+            sql_query = re.search(r"SELECT.*?;", output, re.DOTALL).group(0)
+
+        return sql_query.strip()
+
+    except Exception as e:
+        print("\n=== 에러 발생 ===")
+        print(f"에러 타입: {type(e)}")
+        print(f"에러 메시지: {str(e)}")
+        raise
 
 
 def check_query_result(result: Sequence[Dict[str, Any]]) -> Exception | None:
