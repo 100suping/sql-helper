@@ -151,7 +151,7 @@ def check_leading_question(leading_question: str) -> int:
 
 def refine_user_question(user_question: str, user_question_analyze: str) -> str:
     output_parser = StrOutputParser()
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    llm = ChatOpenAI(model="gpt-4o", temperature=0)
     REFINE_PROMPT = ChatPromptTemplate.from_messages(
         [
             SystemMessage(
@@ -194,6 +194,8 @@ def select_relevant_tables(
         List[str]: context가 포함된 리스트
     """
 
+    llm = ChatOpenAI(temperature=0, model="gpt-4o-mini")
+
     prompt = ChatPromptTemplate.from_messages(
         [
             SystemMessage(
@@ -201,12 +203,17 @@ def select_relevant_tables(
             ),
             (
                 "human",
-                "{query}",
+                "{user_question}",
             ),
         ]
     )
 
-    relevant_tables = vector_store.similarity_search(user_question, k=context_cnt)
+    chain = prompt | llm | StrOutputParser()
+    sql_transform_question = chain.invoke({"user_question": user_question})
+
+    relevant_tables = vector_store.similarity_search(
+        sql_transform_question, k=context_cnt
+    )
     table_contexts = [doc.page_content for doc in relevant_tables]
 
     return table_contexts
@@ -252,7 +259,7 @@ def extract_context(
         ]
     )
 
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    llm = ChatOpenAI(model="gpt-4o", temperature=0)
 
     class context_list(BaseModel):
         """Index list of the context which is necessary for answering user_question."""
@@ -430,9 +437,7 @@ def business_conversation(user_question, sql_query, query_result) -> str:
             ),
         ]
     )
-    llm = ChatOpenAI(
-        model="gpt-4o-mini",
-    )
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
     chain = prompt | llm | output_parser
 
     output = chain.invoke({"user_question": user_question})
