@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import uvicorn
 
-from langgraph_.graph import make_graph, multiturn_test, make_graph_for_test
+from langgraph_.graph import make_graph, make_graph_for_test
 from langgraph_.utils import get_runnable_config
 from dotenv import load_dotenv
 
@@ -33,7 +33,7 @@ def llm_workflow(workflow_input: LLMWorkflowInput):
         "context_cnt": 10,
         "max_query_fix": 2,
         "query_fix_cnt": -1,
-        "sample_info": 3,
+        "sample_info": 5,
     }
     # 초기 질문이 아닌 경우
     if processed_input["initial_question"] == 0:

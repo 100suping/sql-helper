@@ -7,7 +7,6 @@ from .task import (
     extract_context,
     create_query,
     analyze_user_question,
-    refine_user_question,
     clarify_user_question,
     check_leading_question,
     get_query_result,
@@ -121,23 +120,6 @@ def human_feedback(state: GraphState) -> GraphState:
     return state
 
 
-def question_refine(state: GraphState) -> GraphState:
-    """질문 구체화를 진행하는 노드
-
-    Args:
-        state (GraphState): LangGraph에서 쓰이는 그래프 상태
-
-    Returns:
-        GraphState: 사용자의 질문에 대한 대답이 추가된 그래프 상태
-    """
-    collected_questions = state["collected_questions"]
-    user_question_analyze = collected_questions[-1]
-    user_question = state["user_question"]
-    refine_question = refine_user_question(user_question, user_question_analyze)
-
-    return GraphState(user_question=refine_question)  # type: ignore
-
-
 def table_selection(state: GraphState) -> GraphState:
     """사용자의 질문과 연관된 테이블 메타 데이터를 검색하고 검수하는 노드
 
@@ -185,6 +167,8 @@ def table_selection(state: GraphState) -> GraphState:
 
 def query_creation(state: GraphState) -> GraphState:
     user_question = state["user_question"]
+    collected_questions = state["collected_questions"]
+    user_question_analyze = collected_questions[-1]
     table_contexts = state["table_contexts"]
     table_contexts_ids = state["table_contexts_ids"]
 
@@ -197,6 +181,7 @@ def query_creation(state: GraphState) -> GraphState:
         print("Do Query Fix!!!")
         sql_query = create_query(
             user_question,
+            user_question_analyze,
             table_contexts,
             table_contexts_ids,
             flow_status=flow_status,
@@ -205,7 +190,9 @@ def query_creation(state: GraphState) -> GraphState:
         )
 
     else:
-        sql_query = create_query(user_question, table_contexts, table_contexts_ids)
+        sql_query = create_query(
+            user_question, user_question_analyze, table_contexts, table_contexts_ids
+        )
 
     return GraphState(
         sql_query=sql_query,

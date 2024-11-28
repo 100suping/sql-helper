@@ -135,10 +135,6 @@ def clarify_user_question(
         }
     )
 
-    # user_add_questions.append(
-    #     f"\n질문: \n{clarify_question}\n답변: {user_answer}\n"
-    # )
-
     return leading_question
 
 
@@ -147,35 +143,6 @@ def check_leading_question(leading_question: str) -> int:
         return 0
     else:
         return 1
-
-
-def refine_user_question(user_question: str, user_question_analyze: str) -> str:
-    output_parser = StrOutputParser()
-    llm = ChatOpenAI(model="gpt-4o", temperature=0)
-    REFINE_PROMPT = ChatPromptTemplate.from_messages(
-        [
-            SystemMessage(
-                content=load_prompt("prompts/question_refinement/main_v1.prompt")
-            ),
-            (
-                "human",
-                """사용자 질문: 
-                {user_question}
-                
-                사용자 질문 분석: 
-                {user_question_analyze}
-                
-                구체화된 질문:""",
-            ),
-        ]
-    )
-
-    refine_chain = REFINE_PROMPT | llm | output_parser
-    refine_question = refine_chain.invoke(
-        {"user_question": user_question, "user_question_analyze": user_question_analyze}
-    )
-
-    return refine_question
 
 
 def select_relevant_tables(
@@ -194,26 +161,7 @@ def select_relevant_tables(
         List[str]: context가 포함된 리스트
     """
 
-    llm = ChatOpenAI(temperature=0, model="gpt-4o-mini")
-
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            SystemMessage(
-                content="prompts/query_sql_transform/query_sql_transform_v1.prompt"
-            ),
-            (
-                "human",
-                "{user_question}",
-            ),
-        ]
-    )
-
-    chain = prompt | llm | StrOutputParser()
-    sql_transform_question = chain.invoke({"user_question": user_question})
-
-    relevant_tables = vector_store.similarity_search(
-        sql_transform_question, k=context_cnt
-    )
+    relevant_tables = vector_store.similarity_search(user_question, k=context_cnt)
     table_contexts = [doc.page_content for doc in relevant_tables]
 
     return table_contexts
@@ -279,6 +227,7 @@ def extract_context(
 
 def create_query(
     user_question,
+    question_analysis,
     table_contexts,
     table_contexts_ids,
     flow_status="KEEP",
@@ -291,7 +240,7 @@ def create_query(
         if idx in set(table_contexts_ids):
             context += table_info + "\n\n"
 
-    prefix = load_prompt("prompts/query_creation/prefix_v1.prompt").format(
+    prefix = load_prompt("prompts/query_creation/prefix_v2.prompt").format(
         context=context
     )
 
@@ -304,7 +253,8 @@ def create_query(
                 SystemMessage(content=prefix + main_prompt + postfix),
                 (
                     "human",
-                    """user_question: {user_question}""",
+                    """user_question: {user_question}
+                    question_analysis: {question_analysis}""",
                 ),
             ]
         )
@@ -315,14 +265,20 @@ def create_query(
         prompt = ChatPromptTemplate.from_messages(
             [
                 SystemMessage(content=prefix + regen_prompt + postfix),
-                ("human", """user_question: {user_question}"""),
+                (
+                    "human",
+                    """user_question: {user_question}
+                    question_analysis: {question_analysis}""",
+                ),
             ]
         )
 
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
     chain = prompt | llm | output_parser
 
-    output = chain.invoke({"user_question": user_question})
+    output = chain.invoke(
+        {"user_question": user_question, "question_analysis": question_analysis}
+    )
     try:
         sql_query = re.search(r"```sql\s*(.*?)\s*```", output, re.DOTALL).group(1)
     except:
