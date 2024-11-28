@@ -1,7 +1,6 @@
 from langchain_core.runnables import RunnableConfig
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import BitsAndBytesConfig
-from unsloth import FastLanguageModel
 from huggingface_hub import login
 import argparse
 from dotenv import load_dotenv
@@ -66,28 +65,3 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError("Boolean value expected.")
-
-
-def load_qwen_model():
-    # Hugging Face 토큰 설정
-    load_dotenv()
-
-    # 환경 변수에서 Hugging Face 토큰 가져오기
-    huggingface_token = os.getenv("HUGGINGFACE_TOKEN")
-    login(token=huggingface_token)
-
-    # 모델 이름 설정
-    model_name = "unsloth/Qwen2.5-Coder-32B-Instruct"
-
-    # 8비트 양자화 설정
-    bnb_config = BitsAndBytesConfig(load_in_8bit=True)
-
-    # FastLanguageModel을 사용하여 모델과 토크나이저 로드
-    model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name=model_name, token=huggingface_token, quantization_config=bnb_config
-    )
-
-    # Unsloth 사용 시 inference 모드 전환
-    model = FastLanguageModel.for_inference(model)
-
-    return model, tokenizer

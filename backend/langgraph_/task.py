@@ -10,7 +10,6 @@ from sqlalchemy.engine import Result
 
 
 from .utils import (
-    load_qwen_model,
     EmptyQueryResultError,
     NullQueryResultError,
     load_prompt,
