@@ -157,7 +157,7 @@ def embed_db_info(db_names: str | None, DB_SERVER: str, sample_info: int):
             table_schema = sql_db.get_table_info([tables])
 
             # 데이터베이스 이름과 테이블 정보를 가공하여 문자열로 저장
-            processed_schema = f"데이터베이스:{db_name}\n테이블 정보:{table_schema}"
+            processed_schema = f"DB:{db_name}\nTABLE_SCHEMA:{table_schema}"
 
             # 가공된 정보를 information 리스트에 추가
             information.append(processed_schema)
