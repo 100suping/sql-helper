@@ -126,6 +126,10 @@ pyenv activate frontend
 Create .env file in project fronted folder:
 ```
 BACKEND_HOST="your backend server ip"
+DB_HOST=localhost
+DB_USER=your_username
+DB_PASSWORD=your_password
+DB_NAME=your_database_name
 ```
 
 ## Frontend Application run
