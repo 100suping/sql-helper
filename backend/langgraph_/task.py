@@ -198,8 +198,8 @@ def select_relevant_tables(
     Returns:
         List[str]: context가 포함된 리스트
     """
-    relevant_tables = vector_store.similarity_search(user_question, k=context_cnt)
-    table_contexts = [doc.page_content for doc in relevant_tables]
+    relevant_tables = vector_store.similarity_search(query=user_question, k=context_cnt)
+    table_contexts = [doc.metadata["context"] for doc in relevant_tables]
 
     return table_contexts
 

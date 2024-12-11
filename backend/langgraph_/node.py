@@ -148,10 +148,7 @@ def table_selection(state: GraphState) -> GraphState:
     context_cnt = state["context_cnt"]
     flow_status = state.get("flow_status", "KEEP")
     sample_info = state["sample_info"]
-    vector_store = get_vector_stores(sample_info)["db_info"]  # table_ddl + 실제 데이터
-    # vector_store = get_vector_stores()["table_info"]  # table_ddl
-    # FAISS 객체는 serializable 하지 않아 Graph State에 넣어 놓을 수 없다.
-    # vector_store = state["vector_store_dict"]["table_info"] # table_ddl
+    vector_store = get_vector_stores(sample_info)
     # 사용자 질문과 관련성이 있는 테이블+컬럼정보를 검색
     table_contexts = select_relevant_tables(
         user_question=user_question, context_cnt=context_cnt, vector_store=vector_store
