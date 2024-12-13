@@ -125,15 +125,15 @@ def save_conversation(snapshot, feedback):
         mode = "w"
     # CSV 파일 생성
     with open(csv_filename, mode=mode, newline="", encoding="utf-8") as csvfile:
-        writer = csv.writer(csvfile)
+        writer = csv.writer(csvfile, delimiter=",", quotechar='"')
         # 첫 작성 시 헤더 작성
         if mode == "w":
             writer.writerow(
                 [
                     "user_question",
                     "collected_questions",
-                    "table_contexts",
-                    "table_contexts_ids",
+                    # "table_contexts",
+                    # "table_contexts_ids",
                     "table_names",
                     "query_result",
                     "final_answer",
