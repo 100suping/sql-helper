@@ -19,15 +19,8 @@ from .utils import (
 from .utils import EmptyQueryResultError, NullQueryResultError, load_prompt
 from typing import List, Any, Union, Sequence, Dict
 from pydantic import BaseModel, Field
-import os, re
+import os, re, requests
 import torch
-
-
-if torch.cuda.is_available():
-    model, tokenizer = load_qwen_model()
-    print("Local Model is ready!")
-else:
-    print("Non-GPU env has detected.")
 
 
 def evaluate_user_question(user_question: str) -> str:
@@ -295,28 +288,35 @@ def create_query(
             system_prompt = prefix + regen_prompt + postfix
 
         # GPU를 사용 가능하며, 사용자가 로컬 LLM 사용을 원할 경우
-        if torch.cuda.is_available() and llm_api == "Local":
-            full_prompt = system_prompt + f"\n\nuser_question: {user_question}"
-            # 입력 토크나이징
-            inputs = tokenizer(
-                full_prompt,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-                max_length=2048,
-            )
+        if llm_api == "Local":
 
-            # 모델 추론
-            with torch.no_grad():
-                outputs = model.generate(
-                    **inputs,
-                    max_new_tokens=512,
-                    pad_token_id=tokenizer.pad_token_id,
-                    eos_token_id=tokenizer.eos_token_id,
+            response = requests.post(
+                f"http://{os.getenv('MODEL_HOST')}:8001/qwen",
+                json={
+                    "input_dict": {"user_question": user_question},
+                    "system_prompt": system_prompt,
+                    "human_prompt": "user_question: {user_question}",
+                },
+            )
+            if response.status_code == 200:
+                processed_info = response.json()
+                output = processed_info["response"]
+            else:
+                print(
+                    f"Got Unexpected Response from Model Server, Status Code={response.status_code}"
+                )
+                output_parser = StrOutputParser()
+                prompt = ChatPromptTemplate.from_messages(
+                    [
+                        SystemMessage(content=system_prompt),
+                        ("human", """user_question: {user_question}"""),
+                    ]
                 )
 
-            # 결과 디코딩 및 SQL 추출
-            output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+                llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+                chain = prompt | llm | output_parser
+
+                output = chain.invoke({"user_question": user_question})
         else:
             output_parser = StrOutputParser()
             prompt = ChatPromptTemplate.from_messages(
