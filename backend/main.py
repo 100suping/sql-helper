@@ -3,7 +3,11 @@ from pydantic import BaseModel
 import uvicorn
 
 from langgraph_.graph import make_graph, multiturn_test, make_graph_for_test
-from langgraph_.utils import get_runnable_config, extract_context_tables
+from langgraph_.utils import (
+    get_runnable_config,
+    extract_context_tables,
+    save_conversation,
+)
 from dotenv import load_dotenv
 
 app = FastAPI()
@@ -19,6 +23,11 @@ class LLMWorkflowInput(BaseModel):
     thread_id: str
     last_snapshot_values: dict | None
     llm_api: str
+
+
+class UserFeedbackInput(BaseModel):
+    user_feedback: int  # 좋아요 1-chosen, 싫어요 0-rejected
+    thread_id: str
 
 
 @app.post("/llm_workflow")
@@ -61,7 +70,7 @@ def llm_workflow(workflow_input: LLMWorkflowInput):
             interrupt_before=["human_feedback"],
         )
     # print(outputs)
-    if "final_answer" in outputs and outputs["user_question_eval"]:
+    if "final_answer" in outputs and outputs["user_question_eval"] == "1":
         print(
             "RAG과정에서 사용된 context table:",
             extract_context_tables(
@@ -69,6 +78,19 @@ def llm_workflow(workflow_input: LLMWorkflowInput):
             ),
         )
     return outputs
+
+
+@app.post("/user_feedback")
+def user_feedback(feedback_input: UserFeedbackInput):
+    processed_input = feedback_input.model_dump()
+    feedback = processed_input["user_feedback"]
+    config = get_runnable_config(30, processed_input["thread_id"])
+    snapshot = list(workflow.get_state_history(config))[0].values
+
+    if snapshot["user_question_eval"] == "1":
+        save_conversation(snapshot, feedback)
+    else:
+        print("simple conversation would not be saved.")
 
 
 if __name__ == "__main__":

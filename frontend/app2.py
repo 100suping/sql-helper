@@ -117,6 +117,8 @@ def initialize_session_state():
         st.session_state.loading = False
     if "session_count" not in st.session_state:
         st.session_state.session_count = 1
+    if "is_end" not in st.session_state:
+        st.session_state.is_end = 0
 
 
 def reset_session():
@@ -234,6 +236,8 @@ def process_chat(prompt, llm_api):
             st.session_state.initial_question = 1 if ask_user == 0 else 0
 
             st.chat_message("assistant").write(output)
+            if ask_user == 0:
+                st.session_state.is_end = 1
             st.session_state.conversation_history.append(
                 {"role": "assistant", "content": output}
             )
@@ -251,6 +255,18 @@ def process_chat(prompt, llm_api):
         st.session_state.conversation_history.append(
             {"role": "assistant", "content": error_message}
         )
+
+
+# 백엔드 서버에 유저 피드백 전달
+def send_feedback(feedback):
+    requests.post(
+        f"http://{os.getenv('BACKEND_HOST')}:8000/user_feedback",
+        json={
+            "user_feedback": feedback,
+            "thread_id": st.session_state.thread_id,
+        },
+    )
+    st.session_state.is_end = 0
 
 
 def main():
@@ -334,6 +350,15 @@ def main():
 
         if prompt := st.chat_input("데이터에 대해 질문하세요"):
             process_chat(prompt, llm_api)
+
+        # 대화의 한 사이클이 끝났을 때
+        if st.session_state.is_end:
+            # 좋아요&싫어요 선택
+            feedback = st.feedback("thumbs")
+            if feedback is not None:
+                # 백엔드 서버에 피드백 전달
+                send_feedback(feedback)
+                st.rerun()
 
         if st.session_state.loading:
             with st.spinner("응답을 기다리는 중입니다..."):

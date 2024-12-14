@@ -2,8 +2,8 @@ from langchain_core.runnables import RunnableConfig
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import BitsAndBytesConfig
 from huggingface_hub import login
-import argparse
-import os, re
+import argparse, os, re, csv
+from datetime import datetime
 
 
 def get_runnable_config(recursion_limit: int, thread_id: str) -> RunnableConfig:
@@ -110,3 +110,50 @@ def extract_context_tables(table_contexts, table_contexts_ids):
         context_table_list.append(table_name.strip("`"))
 
     return context_table_list
+
+
+def save_conversation(snapshot, feedback):
+    os.makedirs("logs", exist_ok=True)
+
+    # CSV 파일명 생성 (현재 시간 포함)
+    timestamp = datetime.now().strftime("%Y%m%d")
+    csv_filename = f"logs/user_feedback_{timestamp}.csv"
+    # 파일을 새로 만들지, 이어 쓸지 확인
+    if os.path.isfile(f"./logs/user_feedback_{timestamp}.csv"):
+        mode = "a"
+    else:
+        mode = "w"
+    # CSV 파일 생성
+    with open(csv_filename, mode=mode, newline="", encoding="utf-8") as csvfile:
+        writer = csv.writer(csvfile, delimiter=",", quotechar='"')
+        # 첫 작성 시 헤더 작성
+        if mode == "w":
+            writer.writerow(
+                [
+                    "user_question",
+                    "collected_questions",
+                    # "table_contexts",
+                    # "table_contexts_ids",
+                    "table_names",
+                    "query_result",
+                    "final_answer",
+                    "feedback",
+                    "timestamp",
+                ]
+            )
+        writer.writerow(
+            [
+                snapshot["user_question"],
+                snapshot["collected_questions"],
+                # snapshot["table_contexts"],
+                # snapshot["table_contexts_ids"],
+                extract_context_tables(
+                    snapshot["table_contexts"], snapshot["table_contexts_ids"]
+                ),
+                snapshot["query_result"],
+                snapshot["final_answer"],
+                feedback,
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),  # 현재 시간 기록
+            ]
+        )
+    print("Save Completed!")
