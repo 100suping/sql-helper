@@ -131,6 +131,7 @@ def embed_db_info(
         # FAISS 저장
         if os.path.exists(local_path):
             shutil.rmtree(local_path)
+            vector_store.save_local(local_path)
         else:
             vector_store.save_local(local_path)
         print("FAISS 벡터 데이터베이스 생성 완료!\n")
