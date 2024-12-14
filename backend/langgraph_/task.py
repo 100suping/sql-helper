@@ -10,7 +10,6 @@ from sqlalchemy.engine import Result
 
 
 from .utils import (
-    load_qwen_model,
     EmptyQueryResultError,
     NullQueryResultError,
     load_prompt,
@@ -20,7 +19,6 @@ from .utils import EmptyQueryResultError, NullQueryResultError, load_prompt
 from typing import List, Any, Union, Sequence, Dict
 from pydantic import BaseModel, Field
 import os, re, requests
-import torch
 
 
 def evaluate_user_question(user_question: str) -> str:
