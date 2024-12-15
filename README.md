@@ -27,12 +27,17 @@ mysql -u your_user -p your_database < dump.sql
 - Database: MySQL integration
 
 ### System Architecture
-- Backend Server (GPU)
+- Model Server (GPU)
   - NVIDIA L4 GPU minimum
   - VRAM: 23GB+ (Tested: 23034MiB)
   - CUDA Version: 12.2
   - Driver Version: 535.183.01+
   - Purpose: LLM processing & SQL generation
+
+- Backend Server (CPU)
+  - Standard CPU instance
+  - Memory: 8GB+ recommended
+  - Purpose: Query processing & orchestration
 
 - Frontend Server (CPU)
   - Standard CPU instance
@@ -47,12 +52,20 @@ mysql -u your_user -p your_database < dump.sql
 
 
 # Installation and Setup
-## Backend Setup Guide
+
+
+0. Clone and start application:
+```bash
+git clone https://github.com/100suping/sql-helper.git
+```
+
+
+## Model Setup Guide
 ### GPU Server Initial Setup
 
 1. Install CUDA and NVIDIA drivers:
 ```bash
-cd sql-helper/backend/GPUsetting
+cd sql-helper/model/GPUsetting
 chmod +x cuda_install.sh
 ./cuda_install.sh
 # System will reboot
@@ -61,7 +74,7 @@ Note: Server requires reboot after CUDA installation. Ensure all commands are ex
 
 2. After reboot, install PyEnv dependencies:
 ```bash
-cd sql-helper/backend/GPUsetting
+cd sql-helper/model/GPUsetting
 chmod +x pyenv_dependencies.sh
 ./pyenv_dependencies.sh
 ```
@@ -71,22 +84,39 @@ chmod +x pyenv_setup.sh
 ./pyenv_setup.sh
 ```
 
-
 4. Create Python environment:
 ```bash
 chmod +x pyenv_virtualenv.sh
 ./pyenv_virtualenv.sh
 # Enter Python version: 3.11.8
-# Enter environment name: backend
+# Enter environment name: model
 ```
 
-5. Verify GPU setup:
+5. run your python environment
+```bash
+# pyenv acttivate model
+pip install -r requirements.txt
+```
+
+6. Verify GPU setup:
 ```bash
 nvidia-smi
 # Should show NVIDIA L4 GPU info
 ```
 
-### Backend Application Setup
+7. Configure environment variables:
+Create .env file in project root:
+```
+OPENAI_API_KEY="your-api-key"
+HUGGINGFACE_TOKEN="your-huggingface-token"
+```
+
+7.Start model server:
+```
+bash main.sh
+```
+
+### Backend Setup
 1. Setup backend application:
 ```bash
 cd sql-helper/backend
@@ -94,12 +124,17 @@ chmod +x backend_env_setup.sh
 ./backend_env_setup.sh
 ```
 
+2. run your python environment
+```bash
+# if you want to run your pyenv enviroment to acttivate model
+pip install -r requirements.txt
+```
+
 2. Configure environment variables:
 Create .env file in project root:
 ```
-OPENAI_API_KEY="your-api-key"
 URL="your-mysql-database-url"
-HUGGINGFACE_TOKEN='your-huggingface-token"
+MODEL_SERVER="your-model-server-ip"
 ```
 
 3. Start backend:
@@ -109,12 +144,7 @@ python main.py
 
 ## Frontend Setup Guide
 
-0. Clone and start application:
-```bash
-git clone https://github.com/100suping/sql-helper.git
-```
-
-1. Run environment setup script:
+1. Setup frontend application:
 ```bash
 cd sql-helper/frontend
 chmod +x frontend_env_setup.sh
@@ -123,7 +153,8 @@ chmod +x frontend_env_setup.sh
 
 2. Open new terminal and activate environment:
 ```bash
-pyenv activate frontend
+# if you want to run your pyenv enviroment to acttivate model
+pip install -r requirements.txt
 ```
 
 3. Configure environment variables:
@@ -142,47 +173,46 @@ BACKEND_HOST="your backend server ip"
 ```   
 cd sql-helper/frontend
 pip install -r requirements.txt
-streamlit run app2.py
+streamlit run app.py
 ```
 
 ## Project Structure
 ```
 sql-helper/
 ├── frontend/
-│   ├── app.py                # Streamlit interface (legacy)
-│   ├── app2.py               # Streamlit interface
+│   ├── app.py                # Streamlit interface
 │   ├── requirements.txt      # Frontend dependencies
-│   ├── README.md            # Frontend docs
-│   └── frontend_env_setup.sh # Frontend setup script
-│   └── .env      # Frontend variables for front
+│   ├── README.md            # Frontend documentation
+│   ├── frontend_env_setup.sh # Frontend setup script
+│   └── .env                 # Frontend environment variables
 ├── backend/
-│   ├── GPUsetting/          # GPU/CUDA setup scripts
-│   │   ├── cuda_install.sh
-│   │   ├── pyenv_dependencies.sh
-│   │   ├── pyenv_setup.sh
-│   │   └── pyenv_virtualenv.sh
 │   ├── langgraph_/          # Core backend logic
-│   │   ├── init.py
+│   │   ├── __init__.py
 │   │   ├── faiss_init.py
 │   │   ├── graph.py
 │   │   ├── node.py
 │   │   ├── task.py
 │   │   └── utils.py
 │   ├── prompts/             # LLM prompts
-│   │   ├── additional_question/
-│   │   ├── general_conversation/
-│   │   ├── query_creation/
-│   │   ├── question_analysis/
-│   │   ├── question_evaluation/
-│   │   ├── question_refinement/
-│   │   ├── sql_conversation/
-│   │   └── table_selection/
 │   ├── backend_env_setup.sh # Backend setup script
 │   ├── main.py             # Backend entry point
-│   ├── README.md           # Backend docs
-│   └── requirements.txt    # Backend dependencies
-│   └── .env      # Environment variables for backend
-├── README.md              # Project documentation
+│   ├── README.md           # Backend documentation
+│   ├── requirements.txt    # Backend dependencies
+│   └── .env               # Backend environment variables
+├── model/
+│   ├── GPUsetting/         # GPU/CUDA setup scripts
+│   │   ├── cuda_install.sh
+│   │   ├── pyenv_dependencies.sh
+│   │   ├── pyenv_setup.sh
+│   │   └── pyenv_virtualenv.sh
+│   ├── main.py            # Model server entry point
+│   ├── main.sh            # Model server startup script
+│   ├── model_server_setting.sh # Model server configuration
+│   ├── utils.py           # Utility functions
+│   ├── requirements.txt   # Model dependencies
+│   ├── README.md         # Model documentation
+│   └── .env             # Model environment variables
+├── README.md            # Project documentation
 └── .gitignore
 
 Note: `.env` file should be placed in project root and backend directory needs access to it for database and API configurations.
@@ -198,6 +228,11 @@ Note: `.env` file should be placed in project root and backend directory needs a
 
 ## Training Datasets
 
+- [won75/text_to_sql_ko](https://huggingface.co/datasets/won75/text_to_sql_ko)
+ - Korean text-to-SQL dataset
+ - Used for enhancing Korean language support
+ - Based on Spider dataset
+
 - [Sessac101/sql-helper-tone-QA](https://huggingface.co/datasets/Sessac101/sql-helper-tone-QA)
 - Modified BIRD dataset with Korean translations
  - Cleaned and merged schema
@@ -206,10 +241,5 @@ Note: `.env` file should be placed in project root and backend directory needs a
    - `merged_cleaned.json`: Cleaned dataset
    - `merged_cleaned_addschema.json`: Dataset with schema
    - `모범 QA - 시트1.csv`: 50 curated Q&A pairs
-
-- [won75/text_to_sql_ko](https://huggingface.co/datasets/won75/text_to_sql_ko)
- - Korean text-to-SQL dataset
- - Used for enhancing Korean language support
- - Based on Spider dataset
 
 Both datasets were used for fine-tuning our model for improved Korean SQL generation.
