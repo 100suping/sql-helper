@@ -136,7 +136,7 @@ pip install -r requirements.txt
 Create .env file in project root:
 ```
 URL="your-mysql-database-url"
-MODEL_SERVER="your-model-server-ip"
+MODEL_HOST="your-model-server-ip"
 ```
 
 3. Start backend:
