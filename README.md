@@ -92,11 +92,13 @@ chmod +x pyenv_virtualenv.sh
 # Enter environment name: model
 ```
 
-5. run your python environment
+5. run your python environment and 2 bash files
 ```bash
 # pyenv acttivate model
-pip install -r requirements.txt
-```
+chmod +x model_server_setting.sh
+bash model_server_setting.sh
+bash main.sh
+# model cache would be located in sql-helper/.cache
 
 6. Verify GPU setup:
 ```bash
