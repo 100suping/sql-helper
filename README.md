@@ -95,9 +95,10 @@ chmod +x pyenv_virtualenv.sh
 5. run your python environment and 2 bash files
 ```bash
 # pyenv acttivate model
+cd ..
 chmod +x model_server_setting.sh
-bash model_server_setting.sh
-bash main.sh
+./model_server_setting.sh
+
 # model cache would be located in sql-helper/.cache
 
 6. Verify GPU setup:
@@ -115,6 +116,7 @@ HUGGINGFACE_TOKEN="your-huggingface-token"
 
 7.Start model server:
 ```
+cd ..
 bash main.sh
 ```
 
@@ -128,6 +130,7 @@ chmod +x backend_env_setup.sh
 
 2. run your python environment
 ```bash
+cd sql-helper/backend
 # if you want to run your pyenv enviroment to acttivate model
 pip install -r requirements.txt
 ```
@@ -137,10 +140,12 @@ Create .env file in project root:
 ```
 URL="your-mysql-database-url"
 MODEL_HOST="your-model-server-ip"
+OPENAI_API_KEY="your-api-key"
 ```
 
 3. Start backend:
 ```
+cd sql-helper/backend
 python main.py
 ```
 
@@ -156,6 +161,7 @@ chmod +x frontend_env_setup.sh
 2. Open new terminal and activate environment:
 ```bash
 # if you want to run your pyenv enviroment to acttivate model
+cd sql-helper/frontend
 pip install -r requirements.txt
 ```
 
@@ -174,7 +180,6 @@ BACKEND_HOST="your backend server ip"
 0. Start application:
 ```   
 cd sql-helper/frontend
-pip install -r requirements.txt
 streamlit run app.py
 ```
 
