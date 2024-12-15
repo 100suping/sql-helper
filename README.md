@@ -67,7 +67,7 @@ git clone https://github.com/100suping/sql-helper.git
 ```bash
 cd sql-helper/model/GPUsetting
 chmod +x cuda_install.sh
-./cuda_install.sh
+bash cuda_install.sh
 # System will reboot
 ```
 Note: Server requires reboot after CUDA installation. Ensure all commands are executed in order.
@@ -76,29 +76,32 @@ Note: Server requires reboot after CUDA installation. Ensure all commands are ex
 ```bash
 cd sql-helper/model/GPUsetting
 chmod +x pyenv_dependencies.sh
-./pyenv_dependencies.sh
+bash pyenv_dependencies.sh
 ```
 3. Setup PyEnv:
 ```bash
+cd sql-helper/model/GPUsetting
 chmod +x pyenv_setup.sh
-./pyenv_setup.sh
+bash pyenv_setup.sh
 ```
 
 4. Create Python environment:
 ```bash
+cd sql-helper/model/GPUsetting
 chmod +x pyenv_virtualenv.sh
-./pyenv_virtualenv.sh
+bash pyenv_virtualenv.sh
 # Enter Python version: 3.11.8
 # Enter environment name: model
 ```
 
 5. run your python environment and 2 bash files
 ```bash
-# pyenv acttivate model
+# pyenv activate model
+cd sql-helper/model
 chmod +x model_server_setting.sh
 bash model_server_setting.sh
-bash main.sh
 # model cache would be located in sql-helper/.cache
+```
 
 6. Verify GPU setup:
 ```bash
@@ -108,13 +111,13 @@ nvidia-smi
 
 7. Configure environment variables:
 Create .env file in project root:
-```
+```bash
 OPENAI_API_KEY="your-api-key"
 HUGGINGFACE_TOKEN="your-huggingface-token"
 ```
 
-7.Start model server:
-```
+8.Start model server:
+```bash
 bash main.sh
 ```
 
@@ -123,24 +126,26 @@ bash main.sh
 ```bash
 cd sql-helper/backend
 chmod +x backend_env_setup.sh
-./backend_env_setup.sh
+bash backend_env_setup.sh
 ```
 
 2. run your python environment
 ```bash
-# if you want to run your pyenv enviroment to acttivate model
+# if you want to run your pyenv enviroment to activate model
+cd sql-helper/backend
 pip install -r requirements.txt
 ```
 
-2. Configure environment variables:
+3. Configure environment variables:
 Create .env file in project root:
-```
+```bash
 URL="your-mysql-database-url"
 MODEL_HOST="your-model-server-ip"
+OPENAI_API_KEY="your-api-key"
 ```
 
 3. Start backend:
-```
+```bash
 python main.py
 ```
 
@@ -150,18 +155,18 @@ python main.py
 ```bash
 cd sql-helper/frontend
 chmod +x frontend_env_setup.sh
-./frontend_env_setup.sh
+bash frontend_env_setup.sh
 ```
 
 2. Open new terminal and activate environment:
 ```bash
-# if you want to run your pyenv enviroment to acttivate model
+# if you want to run your pyenv enviroment to activate model
 pip install -r requirements.txt
 ```
 
 3. Configure environment variables:
 Create .env file in project fronted folder:
-```
+```bash
 DB_HOST="your mysql DB server ip"
 DB_USER="your root account"
 DB_PASSWORD="your root account's password"
@@ -172,9 +177,7 @@ BACKEND_HOST="your backend server ip"
 ## Frontend Application run
 
 0. Start application:
-```   
-cd sql-helper/frontend
-pip install -r requirements.txt
+```bash   
 streamlit run app.py
 ```
 
